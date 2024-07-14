@@ -124,7 +124,7 @@ namespace Bolt
                     }
                     GameControllerServer gameController = Plugin.FindObjectOfType<GameControllerServer>();
                     // Check if command runner has higher rank then the player to kick
-                    if (gameController == null || config.PlayerPermissions[args[0]] >= config.PlayerPermissions[Plugin.GetPlayerInfo(id).PlayerName])
+                    if (gameController == null || config.PlayerPermissions[args[0]] > config.PlayerPermissions[Plugin.GetPlayerInfo(id).PlayerName])
                     {
                         chatManager.SendChatMessageToPlayer(id, "You cannot kick this player.");
                         return;
@@ -187,9 +187,20 @@ namespace Bolt
                         return;
                     }
 
+                    if (config.PlayerPermissions[Plugin.GetPlayerInfo(id).PlayerName] < config.Ranks[args[1]])
+                    {
+                        chatManager.SendChatMessageToPlayer(id, "Cannot assign rank of heigher permissions than your own.");
+                        return;
+                    }
+
                     chatManager.SendChatMessageToPlayer(id, $"Gave the rank {args[1]} to {args[0]}");
                     if (config.PlayerPermissions.ContainsKey(args[0]))
                     {
+                        if (config.PlayerPermissions[Plugin.GetPlayerInfo(id).PlayerName] < config.PlayerPermissions[args[0]])
+                        {
+                            chatManager.SendChatMessageToPlayer(id, "Cannot assign rank to player of higher permissions.");
+                            return;
+                        }
                         config.PlayerPermissions[args[0]] = config.Ranks[args[1]];
                     }
                     else
@@ -199,7 +210,7 @@ namespace Bolt
                 },
                 description: "Sets the rank of a player.",
                 parameters: ["playerName", "rankName"],
-                permissionLevel: config.Ranks["Owner"]
+                permissionLevel: config.Ranks["Admin"]
             )
         ];
 
