@@ -1,6 +1,9 @@
 ﻿using _scripts._multiplayer._controller;
+using _scripts._multiplayer._controller._game;
 using _scripts._multiplayer._data_objects._to_server;
 using Chat;
+using HarmonyLib;
+using NobleConnect;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,7 +18,7 @@ namespace Bolt
     {
         public static string Prefix = "!";
         private static ChatManagerServer chatManager = UnityEngine.Object.FindObjectOfType<ChatManagerServer>();
-        private static Command[] Commands = {
+        private static Command[] Commands = [
             new Command(
                 name: "help",
                 run: (id, args) => 
@@ -52,7 +55,7 @@ namespace Bolt
                     }
                 },
                 description: "Helps you with the commands.",
-                parameters: new[] { "commandName" }
+                parameters: ["commandName"]
             ), new Command(
                 name: "info",
                 run: (id, args) =>
@@ -114,10 +117,36 @@ namespace Bolt
                 name: "kick",
                 run: (id, args) =>
                 {
-                    chatManager.SendChatMessageToPlayer(id, "WIP");
+                    if (!Plugin.GetPlayers().Any(player => player.PlayerName == args[0]))
+                    {
+                        chatManager.SendChatMessageToPlayer(id, $"Could not find a player: {args[0]}");
+                        return;
+                    }
+                    GameControllerServer gameController = Plugin.FindObjectOfType<GameControllerServer>();
+                    // Check if command runner has higher rank then the player to kick
+                    if (gameController == null || config.PlayerPermissions[args[0]] > config.PlayerPermissions[Plugin.GetPlayerInfo(id).PlayerName])
+                    {
+                        chatManager.SendChatMessageToPlayer(id, "You cannot kick this player.");
+                        return;
+                    }
+                    // Get player id from name
+                    int playerID = Plugin.GetPlayers().First(player => player.PlayerName == args[0]).PlayerID;
+
+                    if (gameController != null)
+                    {
+                        // Call DisconnectPlayer method on the found GameController instance
+                        Traverse.Create(gameController).Method("GetPlayerInfo", (byte)playerID).GetValue(); 
+
+                    }
+                    else
+                    {
+                        Plugin.LoggerInstance.LogError("GameController instance not found.");
+                    }
+                    
+
                 },
                 description: "Kicks an annoying player.",
-                parameters: new[]{ "player" },
+                parameters: ["player"],
                 permissionLevel: config.Ranks["Mod"]
             ), new Command(
                 name: "prefix",
@@ -126,10 +155,12 @@ namespace Bolt
                     if (args.Length != 1)
                         return;
 
-                    Prefix = args[1];
+                    Prefix = args[0];
+
+                    chatManager.SendChatMessageToPlayer(id, $"Prefix changed to: {Prefix}");
                 },
                 description: "Changes the prefix of the command",
-                parameters: new[]{ "prefix" },
+                parameters: ["prefix"],
                 permissionLevel: config.Ranks["Owner"]
             ), new Command(
                 name: "rank",
@@ -138,23 +169,36 @@ namespace Bolt
                     if (args.Length != 2)
                     {
                         // TODO
+                        return;
                     }
 
-                    if (Plugin.GetPlayers().Any(player => player.PlayerName == args[0]))
+                    if (!Plugin.GetPlayers().Any(player => player.PlayerName == args[0]))
                     {
                         chatManager.SendChatMessageToPlayer(id, $"Could not find a player: {args[0]}");
                         return;
                     }
 
-                    if (config.Ranks.Any(rank => rank.Key == args[1]))
+                    if (!config.Ranks.Any(rank => rank.Key == args[1]))
                     {
                         chatManager.SendChatMessageToPlayer(id, $"Could not find rank: {args[1]}");
+                        return;
+                    }
+
+                    chatManager.SendChatMessageToPlayer(id, $"Gave the rank {args[1]} to {args[0]}");
+                    if (config.PlayerPermissions.ContainsKey(args[0]))
+                    {
+                        config.PlayerPermissions[args[0]] = config.Ranks[args[1]];
+                    }
+                    else
+                    {
+                        config.PlayerPermissions.Add(args[0],  config.Ranks[args[1]]);
                     }
                 },
                 description: "Sets the rank of a player.",
-                parameters: new[]{ "playerName", "rankName" }
+                parameters: ["playerName", "rankName"],
+                permissionLevel: config.Ranks["Owner"]
             )
-        };
+        ];
 
         public static void AddCommand(Command command)
             => Commands.Append(command);

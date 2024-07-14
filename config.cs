@@ -28,7 +28,7 @@ public static class config
 
     public static void Initialize(ConfigFile config)
     {
-        PlayerPermissionsConfig = config.Bind("Permissions", "PlayerPermissions", CustomConfigParser.Serialize(new Dictionary<string, int> { { "Ras_rap", int.MaxValue} }), "Serialized PlayerPermissions in custom format");
+        PlayerPermissionsConfig = config.Bind("Permissions", "PlayerPermissions", CustomConfigParser.Serialize(new Dictionary<string, int> { { "Ras_rap", int.MaxValue}, { "SimPleased", int.MaxValue } }), "The players with ranks and their corresponding permissions");
         RanksConfig = config.Bind("Permissions", "Ranks", CustomConfigParser.Serialize(new Dictionary<string, int> { { "Developer", int.MaxValue}, { "Owner", int.MaxValue - 1 }, { "Admin", 1000 }, { "Mod", 500 } }), "The ranks and their permissions");
 
         // Deserialize the configs into the dictionaries
