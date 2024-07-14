@@ -124,23 +124,26 @@ namespace Bolt
                     }
                     GameControllerServer gameController = Plugin.FindObjectOfType<GameControllerServer>();
                     // Check if command runner has higher rank then the player to kick
-                    if (gameController == null || config.PlayerPermissions[args[0]] > config.PlayerPermissions[Plugin.GetPlayerInfo(id).PlayerName])
+                    if (gameController == null || config.PlayerPermissions[args[0]] >= config.PlayerPermissions[Plugin.GetPlayerInfo(id).PlayerName])
                     {
                         chatManager.SendChatMessageToPlayer(id, "You cannot kick this player.");
                         return;
                     }
                     // Get player id from name
-                    int playerID = Plugin.GetPlayers().First(player => player.PlayerName == args[0]).PlayerID;
-
-                    if (gameController != null)
+                    List<PlayerInfo> playerInfos = Plugin.GetPlayers();
+                    if (playerInfos != null)
                     {
-                        // Call DisconnectPlayer method on the found GameController instance
-                        Traverse.Create(gameController).Method("GetPlayerInfo", (byte)playerID).GetValue(); 
-
+                        foreach (PlayerInfo playerInfo in playerInfos)
+                        {
+                            if (playerInfo.PlayerName == args[0])
+                            {
+                                gameController.DisconnectPlayer((byte)playerInfo.PlayerID);
+                            }
+                        }
                     }
                     else
                     {
-                        Plugin.LoggerInstance.LogError("GameController instance not found.");
+                        chatManager.SendChatMessageToPlayer(id, "No players found.");
                     }
                     
 
