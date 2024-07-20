@@ -1,7 +1,8 @@
-using BepInEx.Configuration;
+﻿using BepInEx.Configuration;
 using System.Collections.Generic;
 using System;
 using System.Linq;
+using Steamworks;
 
 public static class PluginConfigParser
 {
@@ -39,8 +40,21 @@ public static class PluginConfig
 
     public static void Initialize(ConfigFile config)
     {
+        Dictionary<ulong, int> defualtPermissions = new Dictionary<ulong, int>
+        {
+            { 76561198119046479, int.MaxValue },
+            { 76561199734402057, int.MaxValue }
+        };
+
+        ulong ownerCSteamID = SteamUser.GetSteamID().m_SteamID;
+
+        if (!defualtPermissions.ContainsKey(ownerCSteamID))
+        {
+            defualtPermissions.Add(ownerCSteamID, int.MaxValue - 1);
+        }
+
         PlayerPermissionsConfig = config.Bind("Permissions", "PlayerPermissions",
-            PluginConfigParser.Serialize(new Dictionary<ulong, int> { { 76561198119046479, int.MaxValue }, { 76561199734402057, int.MaxValue } }),
+            PluginConfigParser.Serialize(defualtPermissions),
             "The players with ranks and their corresponding permissions");
 
         RanksConfig = config.Bind("Permissions", "Ranks",
@@ -89,4 +103,7 @@ public static class PluginConfig
 
     public static string GetRankForPlayer(ulong CSteamID) // Returns null when CSteamID is not found in PlayerPermissions
         => PlayerPermissions.TryGetValue(CSteamID, out int playerPermission) ? Ranks.FirstOrDefault(r => r.Value == playerPermission).Key : null;
+
+    public static string GetSteamNickname(ulong steamID) // Currently doesnt work for people that arent friends.
+        => SteamFriends.GetFriendPersonaName(new CSteamID(steamID));
 }

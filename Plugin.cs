@@ -12,6 +12,7 @@ using SappNetwork;
 using SappUnityUtils.ScriptableObjects;
 using System;
 using System.Linq;
+using Steamworks;
 
 namespace Bolt
 
@@ -25,19 +26,24 @@ namespace Bolt
 
         public static NetworkConfiguration serverConfig = ScriptableObjectSingleton<NetworkConfiguration>.Instance;
 
-        internal static BepInEx.Logging.ManualLogSource LoggerInstance;
+        public static BepInEx.Logging.ManualLogSource LoggerInstance;
         public static Dictionary<int, PlayerInfo> ConnectedPlayers = new Dictionary<int, PlayerInfo>();
 
-        private void Awake()
+        public static ChatManagerServer chatManager;
+
+        void Awake()
         {
-            global::PluginConfig.Initialize(Config);
             // Plugin startup logic
-            LoggerInstance = Logger;
-            Logger.LogInfo($"Plugin {Plugin.PLUGIN_GUID} is loaded!");
+            LoggerInstance = BepInEx.Logging.Logger.CreateLogSource(PLUGIN_GUID);
+            LoggerInstance.LogInfo($"Plugin {Plugin.PLUGIN_GUID} is loaded!");
+
+            global::PluginConfig.Initialize(Config);
 
             // Harmony patching
             var harmony = new Harmony(PLUGIN_GUID);
             harmony.PatchAll();
+
+            CommandHandler.Initialize();
         }
 
         public static PlayerInfo GetPlayerInfo(int playerID)
@@ -90,15 +96,19 @@ namespace Bolt
             return null;
         }
 
-        [HarmonyPatch(typeof(ChatManagerServer), "ReceiveChatToServerMsg")]
+        [HarmonyPatch(typeof(ChatManagerServer))]
         public static class ChatManagerServerPatch
         {
-            static bool Prefix()
+            [HarmonyPatch("Awake")]
+            [HarmonyPostfix]
+            static void AwakePatch(ChatManagerServer __instance)
             {
-                return false; // Returning false skips the execution of the original method.
+                chatManager = __instance;
             }
 
-            static void Postfix(ChatManagerServer __instance, ChatToServerMsg chatToServerMsg)
+            [HarmonyPatch("ReceiveChatToServerMsg")]
+            [HarmonyPrefix]
+            static bool ReceiveChatToServerMsgPatch(ChatManagerServer __instance, ChatToServerMsg chatToServerMsg)
             {
                 string message = chatToServerMsg.Message;
 
@@ -119,7 +129,7 @@ namespace Bolt
                         else
                         {
                             Plugin.LoggerInstance.LogInfo($"{playerInfo.PlayerName}'s message has been blocked due to being muted.");
-                            return;
+                            return false;
                         }
                     }
                     // Send to all players using reflection
@@ -127,6 +137,8 @@ namespace Bolt
 
                     Traverse.Create(__instance).Method("sendChatMessageToAllPlayers", [chatToServerMsg.PlayerID, message]).GetValue();
                 }
+
+                return false;
             }
         }
 
@@ -171,7 +183,7 @@ namespace Bolt
                     Debug.Log("Server is full. Rejecting new connection");
                     connectAnswer.ConnectSuccessfull = false;
                 }
-                else if (PluginConfig.BannedPlayers.Any(playerCSteamID => playerCSteamID == playerInfo.CSteamID))
+                else if (PluginConfig.BannedPlayers.Any(bannedCSteamID => bannedCSteamID == playerInfo.CSteamID))
                 {
                     Plugin.LoggerInstance.LogInfo($"Banned player {{{playerInfo.PlayerName}}} tried to connect.");
                     connectAnswer.ConnectSuccessfull = false;
@@ -183,12 +195,10 @@ namespace Bolt
                     traverse.Property("PlayerInfos").GetValue<System.Collections.Generic.List<PlayerInfo>>().Add(playerInfo);
                     traverse.Method("triggerPlayerConnectedEvent", playerInfo).GetValue();
                     traverse.Method("sendPlayerListInTime", 0.1f).GetValue();
+                    CommandHandler.RunCommand(playerInfo, "info");
                 }
 
                 traverse.Method("Send", true, playerInfo, connectAnswer).GetValue();
-                
-                // TODO display info command on join
-
                 return false;
             }
         }
