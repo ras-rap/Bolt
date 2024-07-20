@@ -2,15 +2,12 @@
 using _scripts._multiplayer._controller._game;
 using _scripts._multiplayer._data_objects._to_server;
 using Chat;
-using HarmonyLib;
-using NobleConnect;
+using IslandsNS;
+using ScriptableObjectsVariables;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.NetworkInformation;
-using System.Runtime.Remoting.Messaging;
-using System.Text;
-using System.Threading.Tasks;
+using System.Reflection;
 
 namespace Bolt
 {
@@ -21,12 +18,12 @@ namespace Bolt
         private static Command[] Commands = [
             new Command(
                 name: "help",
-                run: (id, args) => 
+                run: (id, args) =>
                 {
                     if (args.Length == 1)
                     {
                         string commandName = args[0].ToLower();
-                        Command? command = Commands.FirstOrDefault(command => command.Name == commandName);
+                        Command command = Commands.FirstOrDefault(command => command.Name == commandName);
 
                         if (command == null)
                         {
@@ -45,12 +42,12 @@ namespace Bolt
                     }
 
                     chatManager.SendChatMessageToPlayer(id, "Here are all the commands on this server:");
-                    string playerName = Plugin.GetPlayerInfo(id)?.PlayerName;
+                    ulong playerName = Plugin.GetPlayerInfo(id).CSteamID;
 
                     foreach (Command command in Commands)
                     {
-                        
-                        if (config.PlayerPermissions[playerName] >= command.PermissionLevel)
+
+                        if (PluginConfig.PlayerPermissions[playerName] >= command.PermissionLevel)
                             chatManager.SendChatMessageToPlayer(id, $"{command.Name}: {command.GetParameters()}");
                     }
                 },
@@ -60,8 +57,9 @@ namespace Bolt
                 name: "info",
                 run: (id, args) =>
                 {
-                    chatManager.SendChatMessageToPlayer(id, "Bolt");
-                    chatManager.SendChatMessageToPlayer(id, "Bolt version: " + PluginInfo.PLUGIN_VERSION);
+                    chatManager.SendChatMessageToPlayer(id, "This server is running Bolt");
+                    chatManager.SendChatMessageToPlayer(id, $"Bolt version: {Plugin.PLUGIN_VERSION}");
+                    chatManager.SendChatMessageToPlayer(id, $"To get a list of the commands available type {CommandHandler.Prefix}help");
                     chatManager.SendChatMessageToPlayer(id, "Bolt developers: Ras_rap, SimPleased");
                 },
                 description: "Tells you about the sever."
@@ -74,9 +72,9 @@ namespace Bolt
                     {
                         chatManager.SendChatMessageToPlayer(id, "Player name: " + playerInfo.PlayerName);
                         chatManager.SendChatMessageToPlayer(id, "Player ID: " + playerInfo.PlayerID);
-                        chatManager.SendChatMessageToPlayer(id, "Player rank: " + config.GetRankForPlayer(playerInfo.PlayerName));
+                        chatManager.SendChatMessageToPlayer(id, "Player rank: " + PluginConfig.GetRankForPlayer(playerInfo.CSteamID));
                         // Get the rank level
-                        int rankLevel = config.PlayerPermissions[playerInfo.PlayerName];
+                        int rankLevel = PluginConfig.PlayerPermissions[playerInfo.CSteamID];
                         chatManager.SendChatMessageToPlayer(id, "Player rank level: " + rankLevel);
                     }
                     else
@@ -117,45 +115,30 @@ namespace Bolt
                 name: "kick",
                 run: (id, args) =>
                 {
-                    if (!Plugin.GetPlayers().Any(player => player.PlayerName == args[0]))
+                    PlayerInfo playerInfo = Plugin.GetPlayers().Find(player => player.PlayerName == args[0]);
+                    if (playerInfo == null)
                     {
                         chatManager.SendChatMessageToPlayer(id, $"Could not find a player: {args[0]}");
                         return;
                     }
                     GameControllerServer gameController = Plugin.FindObjectOfType<GameControllerServer>();
-                    // Check if command runner has higher rank then the player to kick
-                    if (gameController == null || config.PlayerPermissions[args[0]] > config.PlayerPermissions[Plugin.GetPlayerInfo(id).PlayerName])
+
+                    if (PluginConfig.PlayerPermissions[playerInfo.CSteamID] > PluginConfig.PlayerPermissions[Plugin.GetPlayerInfo(id).CSteamID])
                     {
                         chatManager.SendChatMessageToPlayer(id, "You cannot kick this player.");
                         return;
                     }
-                    // Get player id from name
-                    List<PlayerInfo> playerInfos = Plugin.GetPlayers();
-                    if (playerInfos != null)
-                    {
-                        foreach (PlayerInfo playerInfo in playerInfos)
-                        {
-                            if (playerInfo.PlayerName == args[0])
-                            {
-                                gameController.DisconnectPlayer((byte)playerInfo.PlayerID);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        chatManager.SendChatMessageToPlayer(id, "No players found.");
-                    }
                     
-
+                    gameController.DisconnectPlayer((byte)playerInfo.PlayerID);
                 },
                 description: "Kicks an annoying player.",
                 parameters: ["player"],
-                permissionLevel: config.Ranks["Mod"]
+                permissionLevel: PluginConfig.Ranks["Mod"]
             ), new Command(
                 name: "prefix",
                 run: (id, args) =>
                 {
-                    if (args.Length != 1)
+                    if (args.Length != 1)   
                         return;
 
                     Prefix = args[0];
@@ -164,7 +147,7 @@ namespace Bolt
                 },
                 description: "Changes the prefix of the command",
                 parameters: ["prefix"],
-                permissionLevel: config.Ranks["Owner"]
+                permissionLevel: PluginConfig.Ranks["Owner"]
             ), new Command(
                 name: "rank",
                 run : (id, args) =>
@@ -175,47 +158,277 @@ namespace Bolt
                         return;
                     }
 
-                    if (!Plugin.GetPlayers().Any(player => player.PlayerName == args[0]))
+                    PlayerInfo playerInfo = Plugin.GetPlayers().Find(player => player.PlayerName == args[0]);
+
+                    if (playerInfo == null)
                     {
                         chatManager.SendChatMessageToPlayer(id, $"Could not find a player: {args[0]}");
                         return;
                     }
 
-                    if (!config.Ranks.Any(rank => rank.Key == args[1]))
+                    if (!PluginConfig.Ranks.ContainsKey(args[1]))
                     {
                         chatManager.SendChatMessageToPlayer(id, $"Could not find rank: {args[1]}");
                         return;
                     }
 
-                    if (config.PlayerPermissions[Plugin.GetPlayerInfo(id).PlayerName] < config.Ranks[args[1]])
-                    {
-                        chatManager.SendChatMessageToPlayer(id, "Cannot assign rank of heigher permissions than your own.");
-                        return;
-                    }
-
                     chatManager.SendChatMessageToPlayer(id, $"Gave the rank {args[1]} to {args[0]}");
-                    if (config.PlayerPermissions.ContainsKey(args[0]))
+                    if (PluginConfig.PlayerPermissions.ContainsKey(playerInfo.CSteamID))
                     {
-                        if (config.PlayerPermissions[Plugin.GetPlayerInfo(id).PlayerName] < config.PlayerPermissions[args[0]])
-                        {
-                            chatManager.SendChatMessageToPlayer(id, "Cannot assign rank to player of higher permissions.");
-                            return;
-                        }
-                        config.PlayerPermissions[args[0]] = config.Ranks[args[1]];
+                        PluginConfig.PlayerPermissions[playerInfo.CSteamID] = PluginConfig.Ranks[args[1]];
                     }
                     else
                     {
-                        config.PlayerPermissions.Add(args[0],  config.Ranks[args[1]]);
+                        PluginConfig.PlayerPermissions.Add(playerInfo.CSteamID, PluginConfig.Ranks[args[1]]);
                     }
                 },
                 description: "Sets the rank of a player.",
                 parameters: ["playerName", "rankName"],
-                permissionLevel: config.Ranks["Admin"]
+                permissionLevel: PluginConfig.Ranks["Owner"]
+            ), new Command(
+                name: "setservername",
+                run: (byte id, string[] args) => {
+                    if (args.Length < 1)
+                    {
+                        return;
+                    }
+
+                    string newName = string.Join(" ", args);
+                    chatManager.SendChatMessageToPlayer(id, $"Set servers name to: {newName}");
+                    Plugin.serverConfig.SteamServerNameVariable.Value = newName;
+                },
+                description: "Sets the server name.",
+                parameters: ["serverName"],
+                permissionLevel: PluginConfig.Ranks["Owner"]
+            ), new Command(
+                name: "setmaxplayers",
+                run: (byte id, string[] args) => {
+                    if (args.Length != 1)
+                    {
+                        return;
+                    }
+
+                    if (int.TryParse(args[0], out int max))
+                    {
+                        chatManager.SendChatMessageToPlayer(id, $"Set servers max player count to: {max}");
+                        Plugin.serverConfig.VarMaxPlayers.Value = max;
+                        return;
+                    }
+
+                    chatManager.SendChatMessageToPlayer(id, $"The input {{{args[0]}}} was not a number.");
+                },
+                description: "Sets the maximum amount of players.",
+                parameters: ["maxPlayers"],
+                permissionLevel: PluginConfig.Ranks["Admin"]
+            ), new Command(
+                name: "setpassword",
+                run: (byte id, string[] args) => {
+                    if (args.Length > 0)
+                    {
+                        string newPassword = string.Join(" ", args);
+                        chatManager.SendChatMessageToPlayer(id, $"Set the servers password to: {newPassword}");
+                        GameControllerServer.Instance.Password = newPassword;
+                    }
+                    else
+                    {
+                        chatManager.SendChatMessageToPlayer(id, $"Removed servers password.");
+                        GameControllerServer.Instance.Password = "";
+                    }
+                },
+                description: "Sets the server password.",
+                parameters: ["password"],
+                permissionLevel: PluginConfig.Ranks["Owner"]
+            ), new Command(
+                name: "mute",
+                run: (byte id, string[] args) => {
+                    if (args.Length != 4)
+                    {
+                        return;
+                    }
+
+                    PlayerInfo playerInfo = Plugin.GetPlayers().Find(player => player.PlayerName == args[0]);
+                    if (playerInfo == null)
+                    {
+                        chatManager.SendChatMessageToPlayer(id, $"Could not find player: {args[0]}");
+                        return;
+                    }
+
+                    DateTime expirationDate = DateTime.UtcNow;
+
+                    if (byte.TryParse(args[1], out byte months))
+                        expirationDate.AddMonths(months);
+
+                    if (byte.TryParse(args[1], out byte days))
+                        expirationDate.AddMonths(days);
+
+                    if (byte.TryParse(args[1], out byte hours))
+                        expirationDate.AddMonths(hours);
+
+                    chatManager.SendChatMessageToPlayer(id, $"You have muted {playerInfo.PlayerName}.");
+                    chatManager.SendChatMessageToPlayer(id, $"The expiration date for their mute is {String.Format("{0:f}", expirationDate)}.");
+
+                    PluginConfig.MutedPlayers.Add(playerInfo.CSteamID, expirationDate);
+                },
+                description: "Mutes a player in the server.",
+                parameters: ["playerName", "months", "days", "hours"],
+                permissionLevel: PluginConfig.Ranks["Mod"]
+            ), new Command(
+                name: "unmute",
+                run: (byte id, string[] args) => {
+                    if (args.Length != 1)
+                    {
+                        return;
+                    }
+
+                    PlayerInfo playerInfo = Plugin.GetPlayers().Find(player => player.PlayerName == args[0]);
+                    if (playerInfo == null)
+                    {
+                        chatManager.SendChatMessageToPlayer(id, $"Could not find player: {args[0]}");
+                        return;
+                    }
+
+                    chatManager.SendChatMessageToPlayer(id, $"You have unmuted {playerInfo.PlayerName}.");
+
+                    PluginConfig.MutedPlayers.Remove(playerInfo.CSteamID);
+                },
+                description: "Unmutes a player in the server.",
+                parameters: ["playerName"],
+                permissionLevel: PluginConfig.Ranks["Mod"]
+            ), new Command(
+                name: "ban",
+                run: (byte id, string[] args) => {
+                    if (args.Length != 1)
+                    {
+                        return;
+                    }
+
+                    PlayerInfo playerInfo = Plugin.GetPlayers().Find(player => player.PlayerName == args[0]);
+                    if (playerInfo == null)
+                    {
+                        chatManager.SendChatMessageToPlayer(id, $"Could not find player: {args[0]}");
+                        return;
+                    }
+
+                    chatManager.SendChatMessageToPlayer(id, $"You have banned {playerInfo.PlayerName}.");
+
+                    PluginConfig.MutedPlayers.Remove(playerInfo.CSteamID);
+                },
+                description: "Bans a player from joining the server.",
+                parameters: ["playerName"],
+                permissionLevel: PluginConfig.Ranks["Mod"]
+            ), new Command(
+                name: "unban",
+                run: (byte id, string[] args) => {
+                    if (args.Length != 1)
+                    {
+                        return;
+                    }
+
+                    PlayerInfo playerInfo = Plugin.GetPlayers().Find(player => player.PlayerName == args[0]);
+                    if (playerInfo == null)
+                    {
+                        chatManager.SendChatMessageToPlayer(id, $"Could not find player: {args[0]}");
+                        return;
+                    }
+
+                    chatManager.SendChatMessageToPlayer(id, $"You have unbanned {playerInfo.PlayerName}.");
+
+                    PluginConfig.BannedPlayers.Remove(playerInfo.CSteamID);
+                },
+                description: "Unbans a player in the server.",
+                parameters: ["playerName"],
+                permissionLevel: PluginConfig.Ranks["Mod"]
+            ), new Command(
+                name: "setmap",
+                run: (byte id, string[] args) => {
+                    if (args.Length != 1)
+                    {
+                        return;
+                    }
+
+                    bool notFound = true;
+                    int mapID = 0;
+                    foreach (string mapName in Enum.GetNames(typeof(ServerMaps)))
+                    {
+                        if (args[0].ToUpper() == mapName) {
+                            mapID = (int)Enum.Parse(typeof(ServerMaps), mapName);
+                            notFound = false;
+                            break;
+                        }
+                    }
+
+                    if (notFound)
+                    {
+                        chatManager.SendChatMessageToPlayer(id, $"Could not find map {args[0]}.");
+                        return;
+                    }
+
+                    IslandConfig newMap = IslandConfig.GetIslandConfigByUniqueID(mapID);
+                    if (newMap == null)
+                    {
+                        chatManager.SendChatMessageToPlayer(id, $"Could not find map {args[0]}.");
+                        return;
+                    }
+
+                    IslandsSwitcher mapSwitcher = UnityEngine.Object.FindObjectOfType<IslandsSwitcher>();
+                    if (mapSwitcher == null)
+                    {
+                        chatManager.SendChatMessageToPlayer(id, $"Could not find the map switcher.");
+                        return;
+                    }
+
+                    mapSwitcher.SwitchToIsland(newMap);
+                    chatManager.SendChatMessageToPlayer(id, $"Map changed to {args[0].ToUpper()}.");
+                },
+                description: $"Changes the servers map.\nCurrent maps are:\n{string.Join("\n", Enum.GetNames(typeof(ServerMaps)))}",
+                parameters: ["mapName"],
+                permissionLevel: PluginConfig.Ranks["Owner"]
+            ), new Command(
+                name: "msg",
+                run: (byte id, string[] args) => {
+                    if (args.Length < 2)
+                    {
+                        return;
+                    }
+
+                    PlayerInfo playerInfo = Plugin.GetPlayers().Find(player => player.PlayerName == args[0]);
+                    if (playerInfo == null)
+                    {
+                        chatManager.SendChatMessageToPlayer(id, $"Could not find player: {args[0]}");
+                        return;
+                    }
+                    string message = string.Join(" ", args.Skip(1));
+
+                    chatManager.SendChatMessageToPlayer(id, $"To {playerInfo.PlayerName}: {message}");
+                    chatManager.SendChatMessageToPlayer(playerInfo.PlayerID, $"From {Plugin.GetPlayerInfo(id).PlayerName}: {message}");
+                },
+                description: "Messages a player.",
+                parameters: ["playerName", "message"]
             )
         ];
 
         public static void AddCommand(Command command)
             => Commands.Append(command);
+
+        public static bool RunCommand(PlayerInfo playerInfo, string commandName, string[] args)
+        {
+            foreach (Command command in Commands)
+            {
+                if (command.Name == commandName)
+                {
+                    if (PluginConfig.PlayerPermissions[playerInfo.CSteamID] < command.PermissionLevel)
+                    {
+                        chatManager.SendChatMessageToPlayer(playerInfo.PlayerID, $"You do not have enough privileges to run {command.Name}.");
+                        return false;
+                    }
+                    command.Run(playerInfo.PlayerID, args);
+                    return true;
+                }
+            }
+
+            chatManager.SendChatMessageToPlayer(playerInfo.PlayerID, $"Could not find the command: {{{commandName}}}");
+            return false;
+        }
 
         public static bool RunCommand(ChatToServerMsg messagePacket)
         {
@@ -223,20 +436,8 @@ namespace Bolt
                 return false;
 
             string[] args = messagePacket.Message.Substring(Prefix.Length).Split(' ');
-            string commandName = args[0].ToLower();
-            string playerName = Plugin.GetPlayerInfo(messagePacket.PlayerID)?.PlayerName;
 
-            foreach (Command command in Commands)
-            {
-                if (command.Name == commandName && config.PlayerPermissions[playerName] >= command.PermissionLevel)
-                {
-                    command.Run(messagePacket.PlayerID, args.Skip(1).ToArray());
-                    return true;
-                }
-            }
-
-            chatManager.SendChatMessageToPlayer(messagePacket.PlayerID, $"Could not find the command: {{{commandName}}}");
-            return false;
+            return RunCommand(Plugin.GetPlayerInfo(messagePacket.PlayerID), args[0].ToLower(), args.Skip(1).ToArray());
         }
     }
 }
