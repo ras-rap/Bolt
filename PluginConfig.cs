@@ -40,21 +40,8 @@ public static class PluginConfig
 
     public static void Initialize(ConfigFile config)
     {
-        Dictionary<ulong, int> defualtPermissions = new Dictionary<ulong, int>
-        {
-            { 76561198119046479, int.MaxValue },
-            { 76561199734402057, int.MaxValue }
-        };
-
-        ulong ownerCSteamID = SteamUser.GetSteamID().m_SteamID;
-
-        if (!defualtPermissions.ContainsKey(ownerCSteamID))
-        {
-            defualtPermissions.Add(ownerCSteamID, int.MaxValue - 1);
-        }
-
         PlayerPermissionsConfig = config.Bind("Permissions", "PlayerPermissions",
-            PluginConfigParser.Serialize(defualtPermissions),
+            PluginConfigParser.Serialize(new Dictionary<ulong, int> { { 76561198119046479, int.MaxValue }, { 76561199734402057, int.MaxValue } }),
             "The players with ranks and their corresponding permissions");
 
         RanksConfig = config.Bind("Permissions", "Ranks",

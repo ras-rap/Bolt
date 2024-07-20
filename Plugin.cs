@@ -196,6 +196,12 @@ namespace Bolt
                     traverse.Method("triggerPlayerConnectedEvent", playerInfo).GetValue();
                     traverse.Method("sendPlayerListInTime", 0.1f).GetValue();
                     CommandHandler.RunCommand(playerInfo, "info");
+
+                    ulong serverCSteamID = SteamUser.GetSteamID().m_SteamID;
+                    if (serverCSteamID == playerInfo.CSteamID && !PluginConfig.PlayerPermissions.ContainsKey(serverCSteamID))
+                    {
+                        PluginConfig.PlayerPermissions.Add(serverCSteamID, PluginConfig.Ranks["Owner"]);
+                    }
                 }
 
                 traverse.Method("Send", true, playerInfo, connectAnswer).GetValue();
