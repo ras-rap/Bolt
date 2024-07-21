@@ -1,5 +1,7 @@
 ﻿using _scripts._multiplayer._controller;
+using HarmonyLib;
 using SappConsoles;
+using SappUnityUtils.ScriptableObjects;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,13 +10,13 @@ using System.Threading.Tasks;
 
 namespace Bolt.Commands
 {
-    public struct SetMaxPlayersCommand : ICommand
+    public struct SetDamageFactorCommand : ICommand
     {
-        public string Name => "setmaxplayers";
+        public string Name => "setdamagefactor";
 
-        public string Description => "Sets the maximum amount of players that can join the server.";
+        public string Description => "Sets the damage factor of cars.";
 
-        public string[] Parameters => ["maxPlayers"];
+        public string[] Parameters => ["damageFactor"];
 
         public int PermissionLevel => PluginConfig.Ranks["Owner"];
 
@@ -26,10 +28,10 @@ namespace Bolt.Commands
                 return "";
             }
 
-            if (int.TryParse(args[0], out int maxPlayers))
+            if (float.TryParse(args[0], out float damageFactor))
             {
-                Plugin.serverConfig.VarMaxPlayers.Value = maxPlayers;
-                return $"Set servers max player count to: <b>{maxPlayers}</b>";
+                Traverse.Create(ScriptableObjectSingleton<ServerSettingsConfiguration>.Instance).Field("defaultDamageFactor").SetValue(damageFactor);
+                return $"Set servers max player count to: <b>{damageFactor}</b>";
             }
 
             return $"<color=red>The input <b>{args[0]}</b> was not a number.";

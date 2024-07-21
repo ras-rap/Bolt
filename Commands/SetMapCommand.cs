@@ -42,23 +42,23 @@ namespace Bolt.Commands
 
             if (notFound)
             {
-                return $"Could not find map {args[0]}.";
+                return $"<color=red>Could not find map {args[0]}.";
             }
 
             IslandConfig newMap = IslandConfig.GetIslandConfigByUniqueID(mapID);
             if (newMap == null)
             {
-                return $"Could not find map {args[0]}.";
+                return $"<color=red>Could not find map {args[0]}.";
             }
 
             IslandsSwitcher mapSwitcher = UnityEngine.Object.FindObjectOfType<IslandsSwitcher>();
             if (mapSwitcher == null)
             {
-                return $"Could not find the map switcher.";
+                return $"<color=red>Could not find the map switcher.";
             }
 
             mapSwitcher.SwitchToIsland(newMap);
-            return $"Map changed to {args[0].ToUpper()}.";
+            return $"Map changed to <b>{args[0].ToUpper()}</b>.";
         }
     }
 }

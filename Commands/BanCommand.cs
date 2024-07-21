@@ -29,11 +29,17 @@ namespace Bolt.Commands
 
             PlayerInfo banPlayerInfo = Plugin.GetPlayers().Find(player => player.PlayerName == args[0]);
             if (banPlayerInfo == null)
-            {
-                return $"Could not find player: {args[0]}";
-            }
-            PluginConfig.MutedPlayers.Remove(banPlayerInfo.CSteamID);
-            return $"You have banned {banPlayerInfo.PlayerName}.";
+                return $"<color=red>Could not find player: {args[0]}";
+
+            PluginConfig.BannedPlayers.Add(banPlayerInfo.CSteamID);
+
+            GameControllerServer gameController = Plugin.FindObjectOfType<GameControllerServer>();
+            if (gameController == null)
+                return $"<color=red>Banned player but could not kick.\n<color=red>Could not find the servers GameController.";
+
+            gameController.DisconnectPlayer(banPlayerInfo.PlayerID);
+
+            return $"You have banned <b>{banPlayerInfo.PlayerName}</b>.";
         }
     }
 }

@@ -30,10 +30,10 @@ namespace Bolt.Commands
             PlayerInfo unmutePlayerInfo = Plugin.GetPlayers().Find(player => player.PlayerName == args[0]);
             if (unmutePlayerInfo == null)
             {
-                return $"Could not find player: {args[0]}";
+                return $"<color:red>Could not find player: {args[0]}";
             }
             PluginConfig.MutedPlayers.Remove(unmutePlayerInfo.CSteamID);
-            return $"You have unmuted {unmutePlayerInfo.PlayerName}.";
+            return $"You have unmuted <b>{unmutePlayerInfo.PlayerName}</b>.";
         }
     }
 }

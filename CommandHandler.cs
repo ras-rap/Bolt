@@ -79,12 +79,15 @@ namespace Bolt
             AddCommand(new SetPasswordCommand());
             AddCommand(new SetMaxPlayersCommand());
             AddCommand(new SetMapCommand());
+            //AddCommand(new SetMaxPartsCommand());
+            //AddCommand(new SetDamageFactorCommand());
 
+            AddCommand(new VoteKickCommand());
             AddCommand(new KickCommand());
             AddCommand(new MuteCommand());
             AddCommand(new UnmuteCommand());
             // These are very broken so have been removed for now
-            //AddCommand(new BanCommand());
+            AddCommand(new BanCommand());
             //AddCommand(new UnbanCommand());
 
             Plugin.LoggerInstance.LogInfo("Finished initializing");

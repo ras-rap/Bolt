@@ -1,11 +1,5 @@
 ﻿using _scripts._multiplayer._controller;
 using _scripts._multiplayer._controller._game;
-using SappConsoles;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Bolt.Commands
 {
@@ -21,17 +15,25 @@ namespace Bolt.Commands
 
         public string Run(PlayerInfo playerInfo, string[] args)
         {
+            if (args.Length == 0)
+            {
+                CommandHandler.RunCommand(playerInfo, "help", [Name]);
+                return "";
+            }
+
             PlayerInfo kickPlayerInfo = Plugin.GetPlayers().Find(player => player.PlayerName == args[0]);
-            if (playerInfo == null)
-                return $"Could not find a player: {args[0]}";
+            if (kickPlayerInfo == null)
+                return $"<color=red>Could not find a player: <b>{args[0]}</b>.";
 
             if (PluginConfig.PlayerPermissions[kickPlayerInfo.CSteamID] > PluginConfig.PlayerPermissions[playerInfo.CSteamID])
-                return "You cannot kick this player.";
+                return "<color=red>You cannot kick this player.";
 
             GameControllerServer gameController = Plugin.FindObjectOfType<GameControllerServer>();
-            gameController.DisconnectPlayer((byte)playerInfo.PlayerID);
+            if (gameController == null)
+                return $"<color=red>Could not find the servers GameController.";
 
-            return $"{kickPlayerInfo.PlayerName} has been kicked.";
+            gameController.DisconnectPlayer(kickPlayerInfo.PlayerID);
+            return $"<b>{kickPlayerInfo.PlayerName}</b> has been kicked.";
         }
     }
 }

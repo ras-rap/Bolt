@@ -29,14 +29,14 @@ namespace Bolt.Commands
                     return GetHelpPage(playerInfo, pageNumber);
                 else if (CommandHandler.Commands.TryGetValue(args[0].ToLower(), out ICommand command))
                     return string.Join("\n", [
-                        $"{command.Name}: {GetParameters(command)}",
-                        $"Description: {command.Description}"
+                        $"<b>{command.Name}</b>: {GetParameters(command)}",
+                        $"<b>Description</b>: {command.Description}"
                         ]);
-                else return $"Could not find command: {args[0]}";
+                else return $"<color=red>Could not find command: <b>{args[0]}</b>.";
             }
             else if (args.Length > 1)
             {
-                CommandHandler.RunCommand(playerInfo, Name, [Name]);
+                CommandHandler.RunCommand(playerInfo, "help", [Name]);
                 return "";
             }
 
@@ -48,14 +48,14 @@ namespace Bolt.Commands
             List<string> commands = CommandHandler.Commands.Values
                 .Where(command =>
                     PluginConfig.PlayerPermissions.TryGetValue(playerInfo.CSteamID, out int perm) && perm >= command.PermissionLevel)
-                .Select(command => $"{command.Name}: {GetParameters(command)}")
+                .Select(command => $"<b>{command.Name}</b>: {GetParameters(command)}")
                 .ToList();
 
             int totalPages = (int)Math.Ceiling((double)commands.Count / commandsPerPage);
 
             pageNumber = Math.Max(1, Math.Min(pageNumber, totalPages));
 
-            return $"Server Commands Page {pageNumber}/{totalPages}:\n" +
+            return $"<b>Server Commands Page {pageNumber}/{totalPages}</b>:\n" +
                 string.Join("\n", commands
                     .Skip((pageNumber - 1) * commandsPerPage)
                     .Take(commandsPerPage));

@@ -30,7 +30,7 @@ namespace Bolt.Commands
             if (PluginConfig.MutedPlayers.TryGetValue(playerInfo.CSteamID, out DateTime expirationDate))
             {
                 if (expirationDate >= DateTime.UtcNow)
-                    return "You are currently muted.";
+                    return "<color=red>You are currently muted.";
 
                 Plugin.LoggerInstance.LogInfo($"{playerInfo.PlayerName}'s mute has expired.");
                 PluginConfig.MutedPlayers.Remove(playerInfo.CSteamID);
@@ -39,13 +39,13 @@ namespace Bolt.Commands
             PlayerInfo recieverPlayerInfo = Plugin.GetPlayers().Find(player => player.PlayerName == args[0]);
             if (recieverPlayerInfo == null)
             {
-                return $"Could not find player: {args[0]}";
+                return $"<color=red>Could not find player: {args[0]}";
             }
 
             string message = string.Join(" ", args.Skip(1));
 
-            Plugin.chatManager.SendChatMessageToPlayer(recieverPlayerInfo.PlayerID, $"From {playerInfo.PlayerName}: {message}");
-            return $"To {recieverPlayerInfo.PlayerName}: {message}";
+            Plugin.chatManager.SendChatMessageToPlayer(recieverPlayerInfo.PlayerID, $"<b>From {playerInfo.PlayerName}</b>: {message}");
+            return $"<b>To {recieverPlayerInfo.PlayerName}</b>: {message}";
         }
     }
 }

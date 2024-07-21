@@ -13,6 +13,7 @@ using SappUnityUtils.ScriptableObjects;
 using System;
 using System.Linq;
 using Steamworks;
+using System.Text.RegularExpressions;
 
 namespace Bolt
 
@@ -70,6 +71,9 @@ namespace Bolt
             return null;
         }
 
+        public static void SendMessageToAllPlayers(string message)
+            => GetPlayers().ForEach(player => chatManager.SendChatMessageToPlayer(player.PlayerID, message));
+
         public static List<PlayerInfo> GetPlayers()
         {
             GameController gameController = FindObjectOfType<GameController>();
@@ -99,6 +103,8 @@ namespace Bolt
         [HarmonyPatch(typeof(ChatManagerServer))]
         public static class ChatManagerServerPatch
         {
+            private static readonly Regex tags = new Regex("<.*?>", RegexOptions.Compiled);
+
             [HarmonyPatch("Awake")]
             [HarmonyPostfix]
             static void AwakePatch(ChatManagerServer __instance)
@@ -110,7 +116,7 @@ namespace Bolt
             [HarmonyPrefix]
             static bool ReceiveChatToServerMsgPatch(ChatManagerServer __instance, ChatToServerMsg chatToServerMsg)
             {
-                string message = chatToServerMsg.Message;
+                string message = tags.Replace(chatToServerMsg.Message, string.Empty);
 
                 if (message.StartsWith(CommandHandler.Prefix))
                     CommandHandler.RunCommand(chatToServerMsg);

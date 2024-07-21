@@ -30,7 +30,7 @@ namespace Bolt.Commands
             PlayerInfo mutePlayerInfo = Plugin.GetPlayers().Find(player => player.PlayerName == args[0]);
             if (mutePlayerInfo == null)
             {
-                return $"Could not find player: {args[0]}";
+                return $"<color=red>Could not find player: {args[0]}";
             }
 
             DateTime expirationDate = DateTime.UtcNow;
@@ -43,8 +43,8 @@ namespace Bolt.Commands
 
             PluginConfig.MutedPlayers.Add(mutePlayerInfo.CSteamID, expirationDate);
             return string.Join("\n", [
-                $"You have muted {mutePlayerInfo.PlayerName}.",
-                $"The expiration date for their mute is {String.Format("{0:f}", expirationDate)}."
+                $"You have muted <b>{mutePlayerInfo.PlayerName}</b>.",
+                $"The expiration date for their mute is <b>{String.Format("{0:f}", expirationDate)}</b>."
                 ]);
         }
     }

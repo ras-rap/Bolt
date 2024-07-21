@@ -22,10 +22,10 @@ namespace Bolt.Commands
         {
             int rankLevel = PluginConfig.PlayerPermissions[playerInfo.CSteamID];
             return string.Join("\n", [
-                $"Player name: {playerInfo.PlayerName}",
-                $"Player ID: {playerInfo.PlayerID}",
-                $"Player rank: {PluginConfig.GetRankForPlayer(playerInfo.CSteamID)}",
-                $"Player rank level: {rankLevel}"
+                $"Player name: <b>{playerInfo.PlayerName}</b>.",
+                $"Player ID: <b>{playerInfo.PlayerID}</b>.",
+                $"Player rank: <b>{PluginConfig.GetRankForPlayer(playerInfo.CSteamID)}</b>.",
+                $"Player rank level: <b>{rankLevel}</b>."
                 ]);
         }
     }

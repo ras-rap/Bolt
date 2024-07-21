@@ -25,7 +25,7 @@ namespace Bolt.Commands
             {
                 string newPassword = string.Join(" ", args);
                 GameControllerServer.Instance.Password = newPassword;
-                return $"Set the servers password to: {newPassword}";
+                return $"Set the servers password to: <b>{newPassword}</b>";
             }
 
             GameControllerServer.Instance.Password = "";

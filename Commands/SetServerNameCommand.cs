@@ -28,7 +28,7 @@ namespace Bolt.Commands
 
             string newName = string.Join(" ", args);
             Plugin.serverConfig.SteamServerNameVariable.Value = newName;
-            return $"Set servers name to: {newName}";
+            return $"Set servers name to: <b>{newName}</b>";
         }
     }
 }

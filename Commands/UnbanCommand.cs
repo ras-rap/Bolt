@@ -30,10 +30,10 @@ namespace Bolt.Commands
             PlayerInfo unbanPlayerInfo = Plugin.GetPlayers().Find(player => player.PlayerName == args[0]);
             if (unbanPlayerInfo == null)
             {
-                return $"Could not find player: {args[0]}";
+                return $"<color=red>Could not find player: {args[0]}";
             }
             PluginConfig.BannedPlayers.Remove(unbanPlayerInfo.CSteamID);
-            return $"You have unbanned {unbanPlayerInfo.PlayerName}.";
+            return $"You have unbanned <b>{unbanPlayerInfo.PlayerName}</b>.";
         }
     }
 }

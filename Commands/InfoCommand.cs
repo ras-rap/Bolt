@@ -22,10 +22,10 @@ namespace Bolt.Commands
         {
 
             return string.Join("\n", [
-                "This server is running Bolt",
-                $"To get a list of the commands available type {CommandHandler.Prefix}help",
-                $"Bolt version: {Plugin.PLUGIN_VERSION}",
-                "Bolt developers: Ras_rap, SimPleased"
+                "\n<b>This server is running <color=#5764f0>Bolt\n",
+                $"To get a list of the commands available type <b>{CommandHandler.Prefix}help</b>.",
+                $"<b>Bolt version</b>: {Plugin.PLUGIN_VERSION}",
+                "<b>Bolt developers</b>: Ras_rap, SimPleased"
                 ]);
             
         }

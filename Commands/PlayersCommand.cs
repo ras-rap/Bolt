@@ -24,11 +24,11 @@ namespace Bolt.Commands
             if (playerInfos != null)
             {
                 return string.Join("\n", playerInfos.Select(playerInfo =>
-                    $"Player name: {playerInfo.PlayerName} ID: {playerInfo.PlayerID}"));
+                    $"Player: <b>{playerInfo.PlayerName}</b> ({playerInfo.PlayerID})"));
             }
             else
             {
-                return "No players found.";
+                return "<color=red>No players found.";
             }
         }
     }

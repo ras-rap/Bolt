@@ -20,7 +20,7 @@ namespace Bolt.Commands
 
         public string Run(PlayerInfo playerInfo, string[] args)
         {
-            return string.Concat(Enumerable.Repeat(" \n ", 20));
+            return string.Concat(Enumerable.Repeat(" \n ", 80));
         }
     }
 }

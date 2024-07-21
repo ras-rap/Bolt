@@ -28,7 +28,7 @@ namespace Bolt.Commands
 
             CommandHandler.Prefix = args[0];
 
-            return $"Prefix changed to: {args[0]}";
+            return $"Prefix changed to: <b>{args[0]}</b>";
         }
     }
 }
