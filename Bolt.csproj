@@ -22,13 +22,16 @@
   
   <ItemGroup>
     <Reference Include="Assembly-CSharp">
-      <HintPath>c:\Program Files (x86)\Steam\steamapps\common\Screw Drivers\Dedicated Server\Screw Drivers Server_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <HintPath>/root/Steam/steamapps/common/Screw Drivers/Dedicated Server/Screw Drivers Server_Data/Managed/Assembly-CSharp.dll</HintPath>
     </Reference>
     <Reference Include="BepInEx">
-      <HintPath>..\..\..\Program Files (x86)\Steam\steamapps\common\Screw Drivers\Dedicated Server\BepInEx\core\BepInEx.dll</HintPath>
+      <HintPath>/root/Steam/steamapps/common/Screw Drivers/Dedicated Server/BepInEx/core/BepInEx.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine">
-      <HintPath>..\..\..\Program Files (x86)\Steam\steamapps\common\Screw Drivers\Dedicated Server\Screw Drivers Server_Data\Managed\UnityEngine.dll</HintPath>
+      <HintPath>/root/Steam/steamapps/common/Screw Drivers/Dedicated Server/Screw Drivers Server_Data/Managed/UnityEngine.dll</HintPath>
+    </Reference>
+    <Reference Include="Steamworks.NET">
+      <HintPath>/root/Steam/steamapps/common/Screw Drivers/Dedicated Server/Screw Drivers Server_Data/Managed/com.rlabrecque.steamworks.net.dll</HintPath>
     </Reference>
   </ItemGroup>
 </Project>
